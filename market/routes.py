@@ -252,7 +252,7 @@ def update_item(item_id):
         return redirect(url_for('item', item_id=item_fetch.id))
     form = ItemForm()
     if form.delete.data:
-        return redirect(url_for('delete_item', item_id=item_fetch.id), code=307)
+        return redirect(url_for('delete_item', item_id=item_fetch.id, from_main=True), code=307)
     if form.validate_on_submit():
         item_fetch.name = form.name.data
         item_fetch.type = form.item_type.data
