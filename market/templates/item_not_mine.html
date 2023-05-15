@@ -1,0 +1,81 @@
+{%extends "template.html"%}
+{%block content%}
+<div class="container p-5">
+    <div class="item-block">
+        <div class="d-flex justify-content-between">
+            <div class="item-block-name p-2">
+                <label>Name:</label>
+                {{ item.name }}
+            </div>
+            <div class="p-2">
+                <label>Cost:</label>
+                <label id="cost">{{ item.cost }}</label>
+            </div>
+        </div>
+        <div class="d-flex justify-content-between">
+            <div class="p-2">
+                <label>Type:</label>
+                {{ item.type }}
+            </div>
+            <div class="p-2">
+                <label>Volume:</label>
+                {{ item.volume }}
+            </div>
+        </div>
+        <div class="d-flex justify-content-end">
+            <div class="p-2">
+                Seller:
+                <a href="{{url_for('profile_not_mine', user_id=item.seller.id)}}">{{item.seller.username}}</a>
+            </div>
+        </div>
+        <div class="d-flex justify-content-between">
+            <form method="POST" action="">
+            {{ form.hidden_tag() }}
+                <div class="d-flex justify-content-between">
+                    <div class="form-group p-2">
+                        {{ form.volume_to_buy.label(class="form-control-label") }}
+                        {% if form.volume_to_buy.errors %}
+                            {{ form.volume_to_buy(class="form-control form-control-lg is-invalid") }}
+                            <div class="invalid-feedback">
+                                {% for error in form.volume_to_buy.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.volume_to_buy(class="form-control form-control-lg", onkeyup="total_cost()") }}
+                        {% endif %}
+                    </div>
+                    <div id="output" class="p-2">
+                        Total cost: $0
+                    </div>
+                    <script>
+                    function total_cost() {
+                        var form = document.forms[0];
+                        var oText = form.elements["volume_to_buy"];
+                        if (oText.value){
+                            var volume_val = parseFloat(oText.value);
+                            var cost_val = parseFloat(document.getElementById('cost').innerHTML)
+                            document.getElementById('output').innerHTML = "Total cost: $" + (volume_val * cost_val);
+                        }
+                        else{
+                            document.getElementById('output').innerHTML = "Total cost: $0";
+                        }
+                    }
+                    </script>
+                </div>
+                <div class="form-group p-2">
+                    {{ form.submit(class="btn btn-primary") }}
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="item-block">
+        <div class="p-2">
+            Description:
+        </div>
+        <div class="p-2">
+            {{ item.description }}
+        </div>
+    </div>
+</div>
+{%endblock content%}

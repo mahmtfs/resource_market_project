@@ -1,0 +1,17 @@
+{%extends "template.html"%}
+{%block content%}
+<div class="container p-5">
+    <div class="header-text p-2">
+        <label>Username: </label>
+        {{ user.username }}
+    </div>
+    <div class="item-block">
+        <div class="p-2">
+            Description:
+        </div>
+        <div class="p-2">
+            {{ user.description }}
+        </div>
+    </div>
+</div>
+{%endblock content%}

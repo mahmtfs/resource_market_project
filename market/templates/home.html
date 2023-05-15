@@ -1,0 +1,84 @@
+{%extends "template.html"%}
+{%block content%}
+    <div class="container p-3">
+        <form method="POST" action="">
+            {{ form.hidden_tag() }}
+            <div class="input-group mb-3">
+                {% if form.query.errors %}
+                    {{ form.query(class="form-control form-control-lg is-invalid") }}
+                    <div class="invalid-feedback">
+                        {% for error in form.query.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {% if query%}
+                        {{ form.query(class="form-control", placeholder=form.query.label.text, value=query) }}
+                    {%else%}
+                        {{ form.query(class="form-control", placeholder=form.query.label.text) }}
+                    {%endif%}
+                {% endif %}
+                {{ form.submit(class="btn btn-outline-secondary") }}
+            </div>
+        </form>
+    </div>
+    <div class="container p-3">
+        {%for item in items.items%}
+            <div class="d-flex" style="margin-bottom: 10px;">
+                <div class="w-100">
+                    <a href="{{url_for('item', item_id=item.id)}}" style="color: black; text-decoration: none">
+                        <div class="item-block">
+                            <div class="d-flex justify-content-between">
+                                <div class="item-block-name p-1">
+                                    Name: {{item.name}}
+                                </div>
+                                <div class="item-block-data p-1">
+                                    ${{item.cost}} per kg
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <div class="item-block-type p-1">
+                                    Type: {{item.type}}
+                                </div>
+                                <div class="item-block-data p-1">
+                                    Available volume: {{item.volume}}kg
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-end">
+                                <div class="item-block-data p-1">
+                                    Seller: {{item.seller.username}}
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                {% if items_my %}
+                    <form class="d-flex align-items-stretch" action="{{url_for('delete_item', item_id=item.id, from_main=False)}}" method="POST">
+                        <input class="btn btn-danger" type="submit" value="Delete">
+                    </form>
+                {% endif %}
+            </div>
+        {%endfor%}
+        {%for page_num in items.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2)%}
+            {%if page_num%}
+                {% if items.page == page_num %}
+                    {% if items_my %}
+                        <a class="btn btn-dark mb-3" href="{{url_for('my_items', page=page_num, query=query)}}">{{page_num}}</a>
+                    {% else %}
+                        <a class="btn btn-dark mb-3" href="{{url_for('home', page=page_num, query=query)}}">{{page_num}}</a>
+                    {% endif %}
+
+                {% else %}
+                    {% if items_my %}
+                        <a class="btn btn-outline-dark mb-3" href="{{url_for('my_items', page=page_num, query=query)}}">{{page_num}}</a>
+                    {% else %}
+                        <a class="btn btn-outline-dark mb-3" href="{{url_for('home', page=page_num, query=query)}}">{{page_num}}</a>
+                    {% endif %}
+
+                {% endif %}
+            {%else%}
+                ...
+            {%endif%}
+        {%endfor%}
+    </div>
+{%endblock content%}
