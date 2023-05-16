@@ -5,14 +5,18 @@ from market.models import User, Item
 from flask_login import login_user, current_user, logout_user, login_required
 
 
-per_page_num = 4
+per_page_num_items = 4
+per_page_num_users = 6
+
+
 highlights = {
     "home_highlight": False,
     "my_items_highlight": False,
     "add_item_highlight": False,
     "about_highlight": False,
     "profile_highlight": False,
-    "balance_highlight": False
+    "balance_highlight": False,
+    "users_highlight": False
 }
 
 
@@ -28,14 +32,14 @@ def home():
         page = 1
         if form.query.data:
             query = form.query.data
-            items = Item.query.filter(Item.name.contains(query)).paginate(page=page, per_page=per_page_num)
+            items = Item.query.filter(Item.name.contains(query)).paginate(page=page, per_page=per_page_num_items)
         else:
-            items = Item.query.paginate(page=page, per_page=per_page_num)
+            items = Item.query.paginate(page=page, per_page=per_page_num_items)
     else:
         if query:
-            items = Item.query.filter(Item.name.contains(query)).paginate(page=page, per_page=per_page_num)
+            items = Item.query.filter(Item.name.contains(query)).paginate(page=page, per_page=per_page_num_items)
         else:
-            items = Item.query.paginate(page=page, per_page=per_page_num)
+            items = Item.query.paginate(page=page, per_page=per_page_num_items)
     highlights_copy = highlights.copy()
     highlights_copy["home_highlight"] = True
     return render_template('home.html',
@@ -59,15 +63,15 @@ def my_items():
         if form.query.data:
             query = form.query.data
             items = Item.query.filter(Item.name.contains(query)).filter_by(seller=current_user).paginate(page=page,
-                                                                                                         per_page=per_page_num)
+                                                                                                         per_page=per_page_num_items)
         else:
-            items = Item.query.filter_by(seller=current_user).paginate(page=page, per_page=per_page_num)
+            items = Item.query.filter_by(seller=current_user).paginate(page=page, per_page=per_page_num_items)
     else:
         if query:
             items = Item.query.filter(Item.name.contains(query)).filter_by(seller=current_user).paginate(page=page,
-                                                                                                         per_page=per_page_num)
+                                                                                                         per_page=per_page_num_items)
         else:
-            items = Item.query.filter_by(seller=current_user).paginate(page=page, per_page=per_page_num)
+            items = Item.query.filter_by(seller=current_user).paginate(page=page, per_page=per_page_num_items)
     highlights_copy = highlights.copy()
     highlights_copy["my_items_highlight"] = True
     return render_template('home.html',
@@ -309,3 +313,36 @@ def balance_page():
                            title='Balance',
                            form=form,
                            highlights=highlights_copy)
+
+
+@app.route("/users", methods=["GET", "POST"])
+@login_required
+def users_page():
+    if current_user.admin:
+        page = request.args.get('page', 1, type=int)
+        query = request.args.get('query', '', type=str)
+        form = SearchForm()
+        users = []
+        if form.validate_on_submit():
+            query = ''
+            page = 1
+            if form.query.data:
+                query = form.query.data
+                users = User.query.filter(User.username.contains(query)).paginate(page=page, per_page=per_page_num_users)
+            else:
+                users = User.query.paginate(page=page, per_page=per_page_num_users)
+        else:
+            if query:
+                users = User.query.filter(User.username.contains(query)).paginate(page=page, per_page=per_page_num_users)
+            else:
+                users = User.query.paginate(page=page, per_page=per_page_num_users)
+        highlights_copy = highlights.copy()
+        highlights_copy["users_highlight"] = True
+        return render_template('users.html',
+                               users=users,
+                               form=form,
+                               query=query,
+                               highlights=highlights_copy)
+    else:
+        return redirect(url_for('home'))
+

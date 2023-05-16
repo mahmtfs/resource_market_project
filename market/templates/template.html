@@ -58,6 +58,15 @@
                                 <a class="nav-link" href="{{url_for('about')}}">About</a>
                             {%endif%}
                         </li>
+                        {% if current_user.admin %}
+                            <li class="nav-item">
+                                {%if highlights['users_highlight'] %}
+                                    <a class="nav-link active" href="{{url_for('users_page')}}">Users</a>
+                                {%else%}
+                                    <a class="nav-link" href="{{url_for('users_page')}}">Users</a>
+                                {%endif%}
+                            </li>
+                        {%endif%}
                         {% if current_user.is_authenticated %}
                             <li class="nav-item">
                                 {%if highlights['profile_highlight'] %}
