@@ -5,7 +5,7 @@ from market.models import User, Item
 from flask_login import login_user, current_user, logout_user, login_required
 
 
-per_page_num_items = 4
+per_page_num_items = 3
 per_page_num_users = 6
 
 
