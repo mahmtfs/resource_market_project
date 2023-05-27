@@ -20,6 +20,18 @@ highlights = {
 }
 
 
+def is_valid_float(data):
+    if len(data) > 1:
+        if data[0] == '0':
+            if data[1] != '.':
+                return 1
+        split_data = data.split('.')
+        if len(split_data) > 1:
+            if len(split_data[1]) > 2:
+                return 2
+    return 0
+
+
 @app.route("/", methods=["GET", "POST"])
 @login_required
 def home():
@@ -32,16 +44,24 @@ def home():
         page = 1
         if form.query.data:
             query = form.query.data
-            items = Item.query.filter(Item.name.contains(query)).paginate(page=page, per_page=per_page_num_items)
+            #items = Item.query.filter(Item.name.contains(query)).paginate(page=page, per_page=per_page_num_items)
+            items = Item.query.filter(Item.name.ilike('%'+query+'%')).paginate(page=page, per_page=per_page_num_items)
         else:
             items = Item.query.paginate(page=page, per_page=per_page_num_items)
     else:
         if query:
-            items = Item.query.filter(Item.name.contains(query)).paginate(page=page, per_page=per_page_num_items)
+            items = Item.query.filter(Item.name.ilike('%'+query+'%')).paginate(page=page, per_page=per_page_num_items)
         else:
             items = Item.query.paginate(page=page, per_page=per_page_num_items)
     highlights_copy = highlights.copy()
     highlights_copy["home_highlight"] = True
+    if current_user.admin:
+        return render_template('home.html',
+                               items=items,
+                               items_my=False,
+                               form=form,
+                               query=query,
+                               highlights=highlights_copy)
     return render_template('home.html',
                            items=items,
                            items_my=False,
@@ -53,33 +73,36 @@ def home():
 @app.route("/items/my", methods=["GET", "POST"])
 @login_required
 def my_items():
-    page = request.args.get('page', 1, type=int)
-    query = request.args.get('query', '', type=str)
-    form = SearchForm()
-    items = []
-    if form.validate_on_submit():
-        query = ''
-        page = 1
-        if form.query.data:
-            query = form.query.data
-            items = Item.query.filter(Item.name.contains(query)).filter_by(seller=current_user).paginate(page=page,
-                                                                                                         per_page=per_page_num_items)
+    if not current_user.admin:
+        page = request.args.get('page', 1, type=int)
+        query = request.args.get('query', '', type=str)
+        form = SearchForm()
+        items = []
+        if form.validate_on_submit():
+            query = ''
+            page = 1
+            if form.query.data:
+                query = form.query.data
+                items = Item.query.filter(Item.name.ilike('%'+query+'%')).filter_by(seller=current_user).paginate(page=page,
+                                                                                                             per_page=per_page_num_items)
+            else:
+                items = Item.query.filter_by(seller=current_user).paginate(page=page, per_page=per_page_num_items)
         else:
-            items = Item.query.filter_by(seller=current_user).paginate(page=page, per_page=per_page_num_items)
+            if query:
+                items = Item.query.filter(Item.name.ilike('%'+query+'%')).filter_by(seller=current_user).paginate(page=page,
+                                                                                                             per_page=per_page_num_items)
+            else:
+                items = Item.query.filter_by(seller=current_user).paginate(page=page, per_page=per_page_num_items)
+        highlights_copy = highlights.copy()
+        highlights_copy["my_items_highlight"] = True
+        return render_template('home.html',
+                               items=items,
+                               items_my=True,
+                               form=form,
+                               query=query,
+                               highlights=highlights_copy)
     else:
-        if query:
-            items = Item.query.filter(Item.name.contains(query)).filter_by(seller=current_user).paginate(page=page,
-                                                                                                         per_page=per_page_num_items)
-        else:
-            items = Item.query.filter_by(seller=current_user).paginate(page=page, per_page=per_page_num_items)
-    highlights_copy = highlights.copy()
-    highlights_copy["my_items_highlight"] = True
-    return render_template('home.html',
-                           items=items,
-                           items_my=True,
-                           form=form,
-                           query=query,
-                           highlights=highlights_copy)
+        return redirect(url_for('home'))
 
 
 @app.route("/about")
@@ -194,27 +217,44 @@ def profile_not_mine(user_id):
 @app.route("/item/new", methods=["GET", "POST"])
 @login_required
 def new_item():
-    form = ItemForm()
-    if form.validate_on_submit():
-        item = Item(name=form.name.data,
-                    type=form.item_type.data,
-                    cost=form.cost.data,
-                    volume=form.volume.data,
-                    description=form.description.data,
-                    seller=current_user)
-        db.session.add(item)
-        db.session.commit()
-        flash("Your item has been created!", 'success')
+    if not current_user.admin:
+        form = ItemForm()
+        if form.validate_on_submit():
+            validation = is_valid_float(form.cost.raw_data[0])
+            if validation != 0:
+                if validation == 1:
+                    flash('Invalid money value! Starts with zero.', 'danger')
+                elif validation == 2:
+                    flash('Invalid money value! Only 2 digits after the point allowed.', 'danger')
+                return redirect(url_for('new_item'))
+            validation = is_valid_float(form.volume.raw_data[0])
+            if validation != 0:
+                if validation == 1:
+                    flash('Invalid amount value! Starts with zero.', 'danger')
+                elif validation == 2:
+                    flash('Invalid amount value! Only 2 digits after the point allowed.', 'danger')
+                return redirect(url_for('new_item'))
+            item = Item(name=form.name.data,
+                        type=form.item_type.data,
+                        cost=form.cost.data,
+                        volume=form.volume.data,
+                        description=form.description.data,
+                        seller=current_user)
+            db.session.add(item)
+            db.session.commit()
+            flash("Your item has been created!", 'success')
+            return redirect(url_for('home'))
+        highlights_copy = highlights.copy()
+        highlights_copy["add_item_highlight"] = True
+        return render_template('item_mine.html',
+                               title='New Item',
+                               form=form,
+                               seller=current_user,
+                               header_text='Create Item',
+                               display_delete=False,
+                               highlights=highlights_copy)
+    else:
         return redirect(url_for('home'))
-    highlights_copy = highlights.copy()
-    highlights_copy["add_item_highlight"] = True
-    return render_template('item_mine.html',
-                           title='New Item',
-                           form=form,
-                           seller=current_user,
-                           header_text='Create Item',
-                           display_delete=False,
-                           highlights=highlights_copy)
 
 
 @app.route("/item/<int:item_id>", methods=["GET", "POST"])
@@ -225,6 +265,13 @@ def item(item_id):
         return redirect(url_for('update_item', item_id=item_fetch.id))
     form = BuyForm()
     if form.validate_on_submit():
+        validation = is_valid_float(form.volume_to_buy.raw_data[0])
+        if validation != 0:
+            if validation == 1:
+                flash('Invalid amount value! Starts with zero.', 'danger')
+            elif validation == 2:
+                flash('Invalid amount value! Only 2 digits after the point allowed.', 'danger')
+            return redirect(url_for('item', item_id=item_id))
         if item_fetch.volume >= form.volume_to_buy.data:
             total_cost = form.volume_to_buy.data * item_fetch.cost
             if total_cost <= current_user.balance:
@@ -240,7 +287,7 @@ def item(item_id):
             else:
                 flash("Insufficient funds!", 'danger')
         else:
-            flash("The volume specified is too high!", 'danger')
+            flash("The amount specified is too high!", 'danger')
     return render_template('item_not_mine.html',
                            title=item_fetch.name,
                            item=item_fetch,
@@ -258,6 +305,20 @@ def update_item(item_id):
     if form.delete.data:
         return redirect(url_for('delete_item', item_id=item_fetch.id, from_main=True), code=307)
     if form.validate_on_submit():
+        validation = is_valid_float(form.cost.raw_data[0])
+        if validation != 0:
+            if validation == 1:
+                flash('Invalid money value! Starts with zero.', 'danger')
+            elif validation == 2:
+                flash('Invalid money value! Only 2 digits after the point allowed.', 'danger')
+            return redirect(url_for('update_item', item_id=item_id))
+        validation = is_valid_float(form.volume.raw_data[0])
+        if validation != 0:
+            if validation == 1:
+                flash('Invalid amount value! Starts with zero.', 'danger')
+            elif validation == 2:
+                flash('Invalid amount value! Only 2 digits after the point allowed.', 'danger')
+            return redirect(url_for('update_item', item_id=item_id))
         item_fetch.name = form.name.data
         item_fetch.type = form.item_type.data
         item_fetch.cost = form.cost.data
@@ -288,11 +349,11 @@ def update_item(item_id):
 @login_required
 def delete_item(item_id, from_main=True):
     item_fetch = Item.query.get_or_404(item_id)
-    if item_fetch.seller != current_user:
+    if item_fetch.seller != current_user and not current_user.admin:
         return redirect(url_for('item', item_id=item_fetch.id))
     db.session.delete(item_fetch)
     db.session.commit()
-    flash("Your item has been deleted!", 'success')
+    flash("The item has been deleted!", 'success')
     if from_main:
         return redirect(url_for('home'))
     else:
@@ -302,17 +363,27 @@ def delete_item(item_id, from_main=True):
 @app.route("/balance", methods=["GET", "POST"])
 @login_required
 def balance_page():
-    form = BalanceForm()
-    if form.validate_on_submit():
-        current_user.balance += form.deposit.data
-        db.session.commit()
-        flash("Transaction complete!", 'success')
-    highlights_copy = highlights.copy()
-    highlights_copy["balance_highlight"] = True
-    return render_template('balance.html',
-                           title='Balance',
-                           form=form,
-                           highlights=highlights_copy)
+    if not current_user.admin:
+        form = BalanceForm()
+        if form.validate_on_submit():
+            validation = is_valid_float(form.deposit.raw_data[0])
+            if validation != 0:
+                if validation == 1:
+                    flash('Invalid money value! Starts with zero.', 'danger')
+                elif validation == 2:
+                    flash('Invalid money value! Only 2 digits after the point allowed.', 'danger')
+                return redirect(url_for('balance_page'))
+            current_user.balance += form.deposit.data
+            db.session.commit()
+            flash("Transaction complete!", 'success')
+        highlights_copy = highlights.copy()
+        highlights_copy["balance_highlight"] = True
+        return render_template('balance.html',
+                               title='Balance',
+                               form=form,
+                               highlights=highlights_copy)
+    else:
+        return redirect(url_for('home'))
 
 
 @app.route("/users", methods=["GET", "POST"])
@@ -328,12 +399,12 @@ def users_page():
             page = 1
             if form.query.data:
                 query = form.query.data
-                users = User.query.filter(User.username.contains(query)).paginate(page=page, per_page=per_page_num_users)
+                users = User.query.filter(User.username.ilike('%'+query+'%')).paginate(page=page, per_page=per_page_num_users)
             else:
                 users = User.query.paginate(page=page, per_page=per_page_num_users)
         else:
             if query:
-                users = User.query.filter(User.username.contains(query)).paginate(page=page, per_page=per_page_num_users)
+                users = User.query.filter(User.username.ilike('%'+query+'%')).paginate(page=page, per_page=per_page_num_users)
             else:
                 users = User.query.paginate(page=page, per_page=per_page_num_users)
         highlights_copy = highlights.copy()

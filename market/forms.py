@@ -32,7 +32,7 @@ class ItemForm(FlaskForm):
                             validators=[DataRequired(), Length(min=1, max=20)])
     cost = FloatField('Cost per kg ($)',
                       validators=[DataRequired(), NumberRange(min=5, max=9999)])
-    volume = FloatField('Volume (kg)',
+    volume = FloatField('Amount (kg)',
                         validators=[DataRequired(), NumberRange(min=5, max=9999)])
     description = TextAreaField('Description',
                                 validators=[DataRequired(), Length(min=1, max=300)])
@@ -48,7 +48,7 @@ class ProfileForm(FlaskForm):
 
 
 class BuyForm(FlaskForm):
-    volume_to_buy = FloatField('Volume To Buy (kg)',
+    volume_to_buy = FloatField('Amount To Buy (kg)',
                                validators=[DataRequired(), NumberRange(min=0, max=9999)])
     submit = SubmitField('Buy')
 

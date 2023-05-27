@@ -13,9 +13,9 @@
                     </div>
                 {% else %}
                     {% if query%}
-                        {{ form.query(class="form-control", placeholder=form.query.label.text, value=query) }}
+                        {{ form.query(class="form-control", placeholder="Username", value=query) }}
                     {%else%}
-                        {{ form.query(class="form-control", placeholder=form.query.label.text) }}
+                        {{ form.query(class="form-control", placeholder="Username") }}
                     {%endif%}
                 {% endif %}
                 {{ form.submit(class="btn btn-outline-secondary") }}

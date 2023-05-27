@@ -41,7 +41,7 @@
                                     Type: {{item.type}}
                                 </div>
                                 <div class="item-block-data p-1">
-                                    Available volume: {{item.volume}}kg
+                                    Available amount: {{item.volume}}kg
                                 </div>
                             </div>
                             <div class="d-flex justify-content-end">
@@ -54,6 +54,11 @@
                 </div>
                 {% if items_my %}
                     <form class="d-flex align-items-stretch" action="{{url_for('delete_item', item_id=item.id, from_main=False)}}" method="POST">
+                        <input class="btn btn-danger" type="submit" value="Delete">
+                    </form>
+                {% endif %}
+                {% if current_user.admin %}
+                    <form class="d-flex align-items-stretch" action="{{url_for('delete_item', item_id=item.id, from_main=True)}}" method="POST">
                         <input class="btn btn-danger" type="submit" value="Delete">
                     </form>
                 {% endif %}
